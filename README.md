@@ -1,5 +1,7 @@
 # Astra Agent Memory
 
+![Alt text](relative%20astra_agent.png?raw=true "Astra Agent Memory")
+
 ## Installing dependencies
 
 pip install -r requirements.txt
