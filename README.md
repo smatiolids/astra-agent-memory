@@ -1,6 +1,6 @@
 # Astra Agent Memory
 
-![Alt text](relative%20astra_agent.png?raw=true "Astra Agent Memory")
+![Astra Agent Memory](astra_agent.png)
 
 ## Installing dependencies
 
