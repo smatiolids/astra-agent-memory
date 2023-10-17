@@ -4,7 +4,6 @@ import os
 import cassio
 from langchain.memory import CassandraChatMessageHistory
 from langchain.memory import ConversationSummaryBufferMemory
-from langchain.chains import ConversationChain
 from langchain.llms import OpenAI
 from langchain.indexes.vectorstore import VectorStoreIndexWrapper
 from langchain.embeddings import OpenAIEmbeddings
@@ -16,15 +15,13 @@ load_dotenv(find_dotenv(), override=True)
 
 cassio.init(token=os.environ["ASTRA_DB_APPLICATION_TOKEN"], database_id=os.environ["ASTRA_DB_ID"])
 
-
-
 # Globals
 cqlMode = 'astra_db'  # 'astra_db'/'local'
 session = cassio.config.resolve_session()
 keyspace = cassio.config.resolve_keyspace()
-memory_table_name = 'astra_agent_memory'
-kb_table_name = 'vs_investment'
-llm = OpenAI(temperature=0.5)
+memory_table_name = 'vs_investment_memory'
+kb_table_name = 'vs_investment_kb'
+llm = OpenAI(temperature=0.1)
 embedding_generator = OpenAIEmbeddings()
 
 CassVectorStore = Cassandra(
@@ -94,7 +91,7 @@ def get_answer(conversation_id, q):
         search_type='similarity_score_threshold',
         search_kwargs={
             'k': 5,
-            'filter': {"source": "./funds/RealInvFIM0623.pdf"},
+            'filter': {"source": st.session_state.file},
             "score_threshold": .8
         },
     )
@@ -122,62 +119,9 @@ def get_answer(conversation_id, q):
 
     return answer
 
-
-
-def get_answer_2(conversation_id, q):
+def load_memory(conversation_id, file):
     st.session_state.conversation_id = conversation_id
-
-    prompt_template = """
-    Given the following extracted parts of a long document and a question, create a final answer with references ("SOURCES"). 
-    If you don't know the answer, just say that you don't know. Don't try to make up an answer.
-    ALWAYS return a "SOURCES" part in your answer. Answer in Portuguese.
-
-
-    QUESTION: {question}
-    =========
-    PREVIOUS CONVERSATION: {summary}
-    =========
-    {summaries}
-    =========
-    FINAL ANSWER:"""
-
-    message_history = CassandraChatMessageHistory(
-        session_id=conversation_id,
-        session=session,
-        keyspace=keyspace,
-        ttl_seconds=3600,
-    )
-
-    memory = ConversationSummaryBufferMemory(
-        llm=llm,
-        chat_memory=message_history,
-        max_token_limit=180,
-        buffer=""
-    )
-
-    summaryConversation = ConversationChain(
-        llm=llm,
-        memory=memory
-
-    )
-
-    answer = summaryConversation.predict(input=q)
-    print("Full answer")
-    print(answer)
-
-    new_summary = memory.predict_new_summary(
-        memory.chat_memory.messages,
-        memory.moving_summary_buffer,
-    )
-
-    st.session_state.messages = memory.chat_memory.messages
-    st.session_state.summary = new_summary
-
-    return answer
-
-
-def load_memory(conversation_id):
-    st.session_state.conversation_id = conversation_id
+    st.session_state.file = file
 
     message_history = CassandraChatMessageHistory(
         session_id=conversation_id,
@@ -217,14 +161,16 @@ if __name__ == "__main__":
     import os
     load_dotenv(find_dotenv(), override=True)
 
-    st.subheader('Recomendação de investimentos com IA Generativa e Astra')
+    st.subheader('Agente de investimentos com IA Generativa e Astra')
     with st.sidebar:
         conversation_id = st.text_input(
             'Conversation ID', 'my-conv-id-01')
-        clear_data = st.button(
-            'Clear History', on_click=clear_memory, args=[conversation_id])
+        file = st.text_input(
+            'File', './pdf/Lamina_12082452000149_v46.pdf')
+        # clear_data = st.button(
+        #     'Clear History', on_click=clear_memory, args=[conversation_id])
         load_data = st.button(
-            'Load Conversation Memory', on_click=load_memory, args=[conversation_id])
+            'Load Conversation Memory', on_click=load_memory, args=[conversation_id, file])
 
     q = st.text_input("Message")
     if q:
