@@ -87,12 +87,20 @@ def get_answer(conversation_id, q):
         buffer=""
     )
 
+    # retrieverSim = CassVectorStore.as_retriever(
+    #     search_type='similarity_score_threshold',
+    #     search_kwargs={
+    #         'k': 5,
+    #         'filter': {"source": st.session_state.file},
+    #         "score_threshold": .8
+    #     },
+    # )
+
     retrieverSim = CassVectorStore.as_retriever(
-        search_type='similarity_score_threshold',
+        search_type='similarity',
         search_kwargs={
             'k': 5,
-            'filter': {"source": st.session_state.file},
-            "score_threshold": .8
+            'filter': {"source": st.session_state.file}
         },
     )
     
