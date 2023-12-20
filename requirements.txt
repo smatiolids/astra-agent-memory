@@ -1,9 +1,7 @@
 openai
-langchain
+ragstack-ai
 docx2txt
 pypdf
 streamlit
 tiktoken
-cassandra-driver>=3.28.0
-cassio>=0.0.4
 python-dotenv==1.0.0
